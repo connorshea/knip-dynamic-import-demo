@@ -1,8 +1,8 @@
 # knip-dynamic-import-demo
 
-Demonstrates how **Knip v6** treats `return import('./Module')` differently from **Knip v5**, causing false positives (and potential false removals) in React + React Router v5 monorepos that use function-based code splitting.
+Demonstrates how **Knip v6** treats various dynamic import patterns differently from **Knip v5**, causing false positives (and potential false removals) in React monorepos that use code splitting.
 
-## The problem
+## Pattern 1 — `return import()` inside a regular function
 
 React Router v5 code-splitting often looks like this:
 
@@ -21,15 +21,15 @@ In **Knip v6** (oxc-parser/oxc-resolver backend), this `return import()` pattern
 
 ### What breaks
 
-After running `npm run knip` you will see false positives like:
+After running `npm run knip` you may see false positives like:
 
 - `AppBootstrap.tsx` — reported as an unused file or its exports flagged as unused
 - `src/routes/HomeRoute.tsx` — `HomeRoute` export flagged as unused
 - `src/routes/AboutRoute.tsx` — `AboutRoute` export flagged as unused
 
-These are **false positives**. The files are reachable at runtime, but Knip v6 can't see that through the `return import()` pattern.
+These are **false positives**. The files are reachable at runtime, but Knip v6 can't see through the `return import()` pattern.
 
-## The working pattern
+## Pattern 2 — Direct arrow function `() => import()`
 
 ```ts
 // WorkingLoader.ts
@@ -38,6 +38,19 @@ export const loadAppWorking = () => import('./AppBootstrapWorking');
 
 An arrow function with a direct `import()` expression is handled by Knip v6's `handleVariableDeclarator`, which **does** traverse into `AppBootstrapWorking`. No false positives.
 
+## Pattern 3 — `React.lazy(() => import())`
+
+```tsx
+// LazyLoader.tsx
+export const LazyApp = React.lazy(() => import('./AppBootstrapLazy'));
+```
+
+This is the standard React code-splitting pattern. Even though the arrow function body is syntactically the same as Pattern 2, wrapping it in `React.lazy()` may prevent Knip v6 from traversing into `AppBootstrapLazy`, because Knip does not know that `React.lazy` accepts a module-returning thunk.
+
+> Run `npm run knip` to observe whether `AppBootstrapLazy.tsx` and `src/routes/ContactRoute.tsx` are falsely flagged.
+>
+> **Note:** As of Knip **6.3.0** (the version pinned in this repo), no false positives are produced by any of the three patterns above. The issue may have been present only in Knip 6.0.x and was subsequently fixed. If you are on an earlier 6.x release and observe false positives, please open an issue with your exact Knip version.
+
 ## Repo structure
 
 ```
@@ -45,11 +58,14 @@ src/
   index.tsx                  # Entry point
   BrokenLoader.ts            # ❌ return import() — Knip v6 treats as opaque
   WorkingLoader.ts           # ✅ () => import() — Knip v6 traverses correctly
-  AppBootstrap.tsx           # Loaded by BrokenLoader — falsely flagged
+  LazyLoader.tsx             # ❓ React.lazy(() => import()) — behaviour under investigation
+  AppBootstrap.tsx           # Loaded by BrokenLoader — may be falsely flagged
   AppBootstrapWorking.tsx    # Loaded by WorkingLoader — correctly tracked
+  AppBootstrapLazy.tsx       # Loaded via React.lazy — may be falsely flagged
   routes/
-    HomeRoute.tsx            # Falsely flagged as unused via BrokenLoader
-    AboutRoute.tsx           # Falsely flagged as unused via BrokenLoader
+    HomeRoute.tsx            # May be falsely flagged via BrokenLoader
+    AboutRoute.tsx           # May be falsely flagged via BrokenLoader
+    ContactRoute.tsx         # May be falsely flagged via LazyLoader
 ```
 
 ## Reproduce
