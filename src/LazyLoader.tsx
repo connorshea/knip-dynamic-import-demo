@@ -9,4 +9,4 @@ import React from 'react';
 // Compare with WorkingLoader.ts, which uses the same arrow function pattern
 // WITHOUT React.lazy wrapping and is correctly traversed by Knip v6.
 
-export const LazyApp = React.lazy(() => import('./AppBootstrapLazy'));
+export const LazyApp = React.lazy(() => return import('./AppBootstrapLazy'));
