@@ -7,8 +7,8 @@ import { AboutRoute } from './routes/AboutRoute';
 //   export const loadAppWorking = () => import('./AppBootstrapWorking');
 //
 // Because Knip v6 handles that pattern correctly (via handleVariableDeclarator),
-it DOES traverse into this file. HomeRoute and AboutRoute are seen as used,
-and no false positives are reported.
+// it DOES traverse into this file. HomeRoute and AboutRoute are seen as used,
+// and no false positives are reported.
 
 export default function AppBootstrapWorking() {
   return (
