@@ -1,1 +1,22 @@
-{\n  "name": "knip-dynamic-import-demo",\n  "version": "1.0.0",\n  "description": "Demonstrates how Knip v6 treats `return import()` differently from Knip v5",\n  "type": "module",\n  "scripts": {\n    "knip": "knip",\n    "build": "tsc"\n  },\n  "dependencies": {\n    "react": "^18.2.0",\n    "react-dom": "^18.2.0",\n    "react-router-dom": "^5.3.4",\n    "@types/react": "^18.2.0",\n    "@types/react-dom": "^18.2.0",\n    "@types/react-router-dom": "^5.3.3"\n  },\n  "devDependencies": {\n    "knip": "^6.0.0",\n    "typescript": "^5.4.0"\n  }\n}
+{
+  "name": "knip-dynamic-import-demo",
+  "version": "1.0.0",
+  "description": "Demonstrates how Knip v6 treats `return import()` differently from Knip v5",
+  "type": "module",
+  "scripts": {
+    "knip": "knip",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^5.3.4",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/react-router-dom": "^5.3.3"
+  },
+  "devDependencies": {
+    "knip": "^6.0.0",
+    "typescript": "^5.4.0"
+  }
+}
