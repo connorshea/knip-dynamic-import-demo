@@ -16,7 +16,7 @@
     "@types/react-router-dom": "^5.3.3"
   },
   "devDependencies": {
-    "knip": "^6.0.0",
+    "knip": "^6.3.0",
     "typescript": "^5.4.0"
   }
 }
