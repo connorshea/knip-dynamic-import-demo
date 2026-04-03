@@ -1,108 +1,48 @@
 # knip-dynamic-import-demo
 
-Demonstrates how **Knip v6** treats various dynamic import patterns differently from **Knip v5**, causing false positives (and potential false removals) in React monorepos that use code splitting.
+Small reproduction for a Knip v6 false-positive scenario with a JS entry file that contains JSX and uses `React.lazy` with a dynamic import.
 
-## Pattern 1 — `return import()` inside a regular function
+The current entry point is [src/index.js](src/index.js). It renders a lazy component using:
 
-React Router v5 code-splitting often looks like this:
-
-```ts
-// BrokenLoader.ts
-export function loadApp() {
+```jsx
+React.lazy(() => {
   return import('./AppBootstrap');
-}
+})
 ```
 
-In **Knip v5** (TypeScript compiler backend), this worked fine — the TS compiler followed all reachable files automatically, so `AppBootstrap` and everything it imports were included in the analysis.
+That imported file then references route components in [src/AppBootstrap.tsx](src/AppBootstrap.tsx), [src/routes/HomeRoute.tsx](src/routes/HomeRoute.tsx), and [src/routes/AboutRoute.tsx](src/routes/AboutRoute.tsx).
 
-In **Knip v6** (oxc-parser/oxc-resolver backend), this `return import()` pattern is handled by the catch-all `handleImportExpression` visitor, which registers the import with `IMPORT_FLAGS.OPAQUE`. That means:
+Expected behavior: those files are reachable, so they should not be reported as unused.
 
-> Knip sees the import exists, but does **not** traverse into `AppBootstrap` or any of its transitive imports.
+Observed behavior:
 
-### What breaks
+- Knip 6 (npx knip --files) reports unused files in this graph.
+- Knip 5 (npx knip@5 --files) reports no unused files.
 
-After running `npm run knip` you may see false positives like:
+Reported Knip 6 output from this reproduction:
 
-- `AppBootstrap.tsx` — reported as an unused file or its exports flagged as unused
-- `src/routes/HomeRoute.tsx` — `HomeRoute` export flagged as unused
-- `src/routes/AboutRoute.tsx` — `AboutRoute` export flagged as unused
+  Unused files (3)
+  src/AppBootstrap.tsx
+  src/routes/AboutRoute.tsx
+  src/routes/HomeRoute.tsx
 
-These are **false positives**. The files are reachable at runtime, but Knip v6 can't see through the `return import()` pattern.
-
-## Pattern 2 — Direct arrow function `() => import()`
-
-```ts
-// WorkingLoader.ts
-export const loadAppWorking = () => import('./AppBootstrapWorking');
-```
-
-An arrow function with a direct `import()` expression is handled by Knip v6's `handleVariableDeclarator`, which **does** traverse into `AppBootstrapWorking`. No false positives.
-
-## Pattern 3 — `React.lazy(() => import())`
-
-```tsx
-// LazyLoader.tsx
-export const LazyApp = React.lazy(() => import('./AppBootstrapLazy'));
-```
-
-This is the standard React code-splitting pattern. Even though the arrow function body is syntactically the same as Pattern 2, wrapping it in `React.lazy()` may prevent Knip v6 from traversing into `AppBootstrapLazy`, because Knip does not know that `React.lazy` accepts a module-returning thunk.
-
-> Run `npm run knip` to observe whether `AppBootstrapLazy.tsx` and `src/routes/ContactRoute.tsx` are falsely flagged.
->
-> **Note:** As of Knip **6.3.0** (the version pinned in this repo), no false positives are produced by any of the three patterns above. The issue may have been present only in Knip 6.0.x and was subsequently fixed. If you are on an earlier 6.x release and observe false positives, please open an issue with your exact Knip version.
-
-## Repo structure
-
-```
-src/
-  index.tsx                  # Entry point
-  BrokenLoader.ts            # ❌ return import() — Knip v6 treats as opaque
-  WorkingLoader.ts           # ✅ () => import() — Knip v6 traverses correctly
-  LazyLoader.tsx             # ❓ React.lazy(() => import()) — behaviour under investigation
-  AppBootstrap.tsx           # Loaded by BrokenLoader — may be falsely flagged
-  AppBootstrapWorking.tsx    # Loaded by WorkingLoader — correctly tracked
-  AppBootstrapLazy.tsx       # Loaded via React.lazy — may be falsely flagged
-  routes/
-    HomeRoute.tsx            # May be falsely flagged via BrokenLoader
-    AboutRoute.tsx           # May be falsely flagged via BrokenLoader
-    ContactRoute.tsx         # May be falsely flagged via LazyLoader
-```
+Note: running Knip 6 in this workspace currently reports the two route files, while the full three-file result above has also been observed. The core issue is the same: Knip 6 can fail to follow this dynamic import chain, while Knip 5 does not.
 
 ## Reproduce
 
-```bash
-npm install
-npm run knip
-```
+1. npm install
+2. npx knip --files
+3. npx knip@5 --files
 
-## Workarounds
+## Why this likely happens
 
-**Option 1 — Change to arrow function syntax:**
-```ts
-// Before
-export function loadApp() {
-  return import('./AppBootstrap');
-}
+This appears to be parser/resolver behavior in Knip 6 around JS-as-JSX plus dynamic import usage in React.lazy. Knip 5 used a different analysis backend and resolves this case correctly.
 
-// After
-export const loadApp = () => import('./AppBootstrap');
-```
+## Current project structure
 
-**Option 2 — Add the file as an explicit entry in `knip.json`:**
-```json
-{
-  "entry": ["src/index.tsx", "src/AppBootstrap.tsx"]
-}
-```
-
-**Option 3 — Ignore with a JSDoc tag** on the exports in `AppBootstrap.tsx`:
-```ts
-/** @public */
-export default function AppBootstrap() { ... }
-```
-
-## Related
-
-- [Knip v6 release notes](https://knip.dev/blog/knip-v6)
-- [Knip source: `handleImportExpression`](https://github.com/webpro-nl/knip/blob/main/packages/knip/src/typescript/visitors/imports.ts)
-- [Knip fixtures: imports-opaque](https://github.com/webpro-nl/knip/tree/main/packages/knip/fixtures/imports-opaque)
+  src/
+    index.js
+    AppBootstrap.tsx
+    routes/
+      HomeRoute.tsx
+      AboutRoute.tsx
