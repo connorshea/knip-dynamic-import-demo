@@ -1,6 +1,6 @@
 # knip-dynamic-import-demo
 
-Small reproduction for a Knip v6 false-positive scenario with a JS entry file that contains JSX and uses `React.lazy` with a dynamic import.
+Small reproduction for a Knip v6 false-positive scenario with a JS entry file that contains JSX.
 
 The current entry point is [src/index.js](src/index.js). It renders a lazy component using:
 
@@ -21,22 +21,24 @@ Observed behavior:
 
 Reported Knip 6 output from this reproduction:
 
+```
   Unused files (3)
   src/AppBootstrap.tsx
   src/routes/AboutRoute.tsx
   src/routes/HomeRoute.tsx
+```
 
 Note: running Knip 6 in this workspace currently reports the two route files, while the full three-file result above has also been observed. The core issue is the same: Knip 6 can fail to follow this dynamic import chain, while Knip 5 does not.
 
 ## Reproduce
 
-1. npm install
-2. npx knip --files
-3. npx knip@5 --files
+1. `npm install`
+2. `npx knip --files`, see unused files reported
+3. `npx knip@5 --files`, see no unused files reported
 
 ## Why this likely happens
 
-This appears to be parser/resolver behavior in Knip 6 around JS-as-JSX plus dynamic import usage in React.lazy. Knip 5 used a different analysis backend and resolves this case correctly.
+This appears to be parser/resolver behavior in Knip 6 around JS-as-JSX. Knip 5 used a different analysis backend and resolves this case correctly.
 
 ## Current project structure
 
