@@ -1,0 +1,1 @@
+import React from 'react';\n// This export will be flagged as unused by Knip v6 when imported only via\n// AppBootstrap (loaded with the `return import()` pattern in BrokenLoader.ts).\n// It will NOT be flagged when imported via AppBootstrapWorking (WorkingLoader.ts).\nexport function HomeRoute() {\n  return <div><h1>Home</h1><p>Welcome to the home page.</p></div>;\n}

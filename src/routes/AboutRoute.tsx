@@ -1,0 +1,1 @@
+import React from 'react';\n// Same as HomeRoute — flagged as unused via the broken loader, fine via the working one.\nexport function AboutRoute() {\n  return <div><h1>About</h1><p>This is the about page.</p></div>;\n}

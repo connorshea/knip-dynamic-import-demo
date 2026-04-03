@@ -1,0 +1,1 @@
+// ✅ WORKS in Knip v6: arrow function with direct `import()` expression.\n// Knip v6's handleVariableDeclarator sees this pattern and traverses\n// into AppBootstrapWorking, so its exports are correctly tracked.\n//\n// This is the recommended workaround when migrating from Knip v5 to v6.\n\nexport const loadAppWorking = () => import('./AppBootstrapWorking');
