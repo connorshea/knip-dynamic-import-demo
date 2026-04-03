@@ -1,13 +1,19 @@
 # knip-dynamic-import-demo
 
-Small reproduction for a Knip v6 false-positive scenario with a JS entry file that contains JSX.
+Small reproduction for a Knip v6 false-positive scenario with a JS entry file that contains JSX-specific imports.
 
-The current entry point is [src/index.js](src/index.js). It renders a lazy component using:
+The current entry point is [src/index.js](src/index.js). The `index.js` file is:
 
 ```jsx
-React.lazy(() => {
-  return import('./AppBootstrap');
-})
+import { createRoot } from 'react-dom/client';
+
+const BaseComp = import('./AppBootstrap.tsx');
+
+const root = createRoot(document.getElementById('root'));
+
+root.render(
+  <BaseComp />
+);
 ```
 
 That imported file then references route components in [src/AppBootstrap.tsx](src/AppBootstrap.tsx), [src/routes/HomeRoute.tsx](src/routes/HomeRoute.tsx), and [src/routes/AboutRoute.tsx](src/routes/AboutRoute.tsx).
@@ -28,7 +34,7 @@ Reported Knip 6 output from this reproduction:
   src/routes/HomeRoute.tsx
 ```
 
-Note: running Knip 6 in this workspace currently reports the two route files, while the full three-file result above has also been observed. The core issue is the same: Knip 6 can fail to follow this dynamic import chain, while Knip 5 does not.
+It works fine if `index.js` is instead `index.jsx`, but as `index.js` it does not work.
 
 ## Reproduce
 
